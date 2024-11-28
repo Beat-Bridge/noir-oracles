@@ -851,6 +851,7 @@ dependencies = [
  "jsonrpc-core",
  "jsonrpc-http-server",
  "reqwest",
+ "serde",
  "serde_json",
  "tokio",
 ]
