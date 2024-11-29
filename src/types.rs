@@ -2,7 +2,13 @@ use serde::{Deserialize, Serialize};
 
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct SpotifyApiResponse {
+pub struct  RecentlyPlayed {
+
+}
+
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct UserStatsResponse {
     total: u32,      
     limit: u32,      
     offset: u32,     
@@ -88,4 +94,11 @@ pub struct Track {
     track_number: u32,
     r#type: String,
     uri: String,
+}
+
+
+pub enum TimeRange {
+    ShortTerm,
+    MediumTerm,
+    LongTerm,
 }
