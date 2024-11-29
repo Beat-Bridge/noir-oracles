@@ -1,5 +1,18 @@
 use serde::{Deserialize, Serialize};
 
+#[derive(Debug)]
+pub enum SpotifyApiResponse {
+    UserStats(UserStatsResponse),
+    RecentlyPlayed(RecentlyPlayed),
+}
+
+#[derive(Debug)]
+pub enum ResponseType {
+    UserStats,
+    RecentlyPlayed,
+}
+
+
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct  RecentlyPlayed {
