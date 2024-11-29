@@ -5,6 +5,7 @@ pub mod  query_builder;
 pub mod types;
 pub mod server;
 pub mod rpc_methods;
+pub mod middleware;
 
 
 #[tokio::main]
