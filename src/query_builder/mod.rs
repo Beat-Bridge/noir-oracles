@@ -97,9 +97,10 @@ pub async fn stats_query_builder(
     let auth_header = format!("Bearer {}", authorization);
 
     // Perform the API request
-    match spotify_api_request(endpoint, auth_header, ResponseType::UserStats).await? {
-        SpotifyApiResponse::UserStats(stats) => Ok(stats),
-        _ => Err("Unexpected response type".into()),
+   match spotify_api_request(endpoint, auth_header, ResponseType::RecentlyPlayed).await {
+        Ok(SpotifyApiResponse::UserStats(stats)) => Ok(stats),
+        Ok(_) => Err("Unexpected response type".into()),
+        Err(e) => Err(e),
     }
 }
 
@@ -121,8 +122,9 @@ pub async fn stats_query_builder(
 pub async fn recently_played_query_builder(authorization: &str,  limit: i8, before: i8, after: i64) -> Result<RecentlyPlayed, Box<dyn Error>> {
     let endpoint = format!("https://api.spotify.com/v1/me/player/recently-played?limit={}&after={}&before={}",limit,after,before);
     let auth_header = format!("Bearer {}", authorization);
-    match spotify_api_request(endpoint, auth_header, ResponseType::RecentlyPlayed).await? {
-        SpotifyApiResponse::RecentlyPlayed(plays) => Ok(plays),
-        _ => Err("Unexpected response type".into()),
+    match spotify_api_request(endpoint, auth_header, ResponseType::RecentlyPlayed).await {
+        Ok(SpotifyApiResponse::RecentlyPlayed(plays)) => Ok(plays),
+        Ok(_) => Err("Unexpected response type".into()),
+        Err(e) => Err(e),
     }
 }
