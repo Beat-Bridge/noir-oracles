@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 
 #[derive(Serialize, Deserialize, Debug)]
-struct SpotifyApiResponse {
+pub struct SpotifyApiResponse {
     total: u32,      
     limit: u32,      
     offset: u32,     
@@ -15,21 +15,21 @@ struct SpotifyApiResponse {
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(untagged)]
-enum Item {
+pub enum Item {
     Artist(Artist),
     Track(Track),
 }
 
 
 #[derive(Serialize, Deserialize, Debug)]
-struct ExternalIds {
+pub struct ExternalIds {
     isrc: String, 
     ean: String,  
     upc: String,  
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-struct Album {
+pub struct Album {
     album_type: String,
     artists: Vec<Artist>,
     available_markets: Vec<String>,
@@ -47,7 +47,7 @@ struct Album {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-struct Artist {
+pub struct Artist {
     external_urls: ExternalUrls,
     href: String,
     id: String,
@@ -57,19 +57,19 @@ struct Artist {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-struct ExternalUrls {
+pub struct ExternalUrls {
     spotify: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-struct Image {
+pub struct Image {
     height: u32,
     url: String,
     width: u32,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-struct Track {
+pub struct Track {
     album: Album,
     artists: Vec<Artist>,
     available_markets: Vec<String>,

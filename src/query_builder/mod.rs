@@ -1,13 +1,13 @@
 use reqwest::header::{HeaderMap, HeaderValue};
 use reqwest::Client;
-use serde_json::Value;
 use std::error::Error;
-use std::fmt::format;
+
+use crate::types::SpotifyApiResponse;
 
 async fn spotify_api_request(
     endpoint: String,
     authorization: String,
-) -> Result<Value, Box<dyn Error>> {
+) -> Result<SpotifyApiResponse, Box<dyn Error>> {
     let client = Client::new();
 
     // Build headers
@@ -24,7 +24,7 @@ async fn spotify_api_request(
     // Check for HTTP success
     if response.status().is_success() {
         // Deserialize JSON response
-        let json_body: Value = serde_json::Value::String(response.text().await?);
+        let json_body: SpotifyApiResponse = response.json().await?;
         Ok(json_body)
     } else {
         Err(format!(
@@ -36,7 +36,7 @@ async fn spotify_api_request(
 }
 
 /// Query top tracks
-pub async fn track_query_builder(authorization: &str) -> Result<Value, Box<dyn Error>> {
+pub async fn track_query_builder(authorization: &str) -> Result<SpotifyApiResponse, Box<dyn Error>> {
     let endpoint = String::from("https://api.spotify.com/v1/me/top/tracks");
     let authorization = format!("Bearer {}", authorization);
     let query =   spotify_api_request(endpoint, authorization).await?;
@@ -44,7 +44,7 @@ pub async fn track_query_builder(authorization: &str) -> Result<Value, Box<dyn E
 }
 
 /// Query top artists
-pub async fn artist_query_builder(authorization: &str) -> Result<Value, Box<dyn Error>> {
+pub async fn artist_query_builder(authorization: &str) -> Result<SpotifyApiResponse, Box<dyn Error>> {
     let endpoint = String::from("https://api.spotify.com/v1/me/top/artists");
     let authorization =  format!("Bearer {}", authorization);
     let query =   spotify_api_request(endpoint, authorization).await?;
