@@ -1,117 +1,145 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug)]
-pub enum SpotifyApiResponse {
-    UserStats(UserStatsResponse),
-    RecentlyPlayed(RecentlyPlayed),
+#[derive(Serialize, Deserialize, Debug)]
+pub struct RecentlyPlayed {
+    href: String,                     // A link to the full result
+    limit: u32,                       // Maximum number of items in the response
+    next: Option<String>,             // URL to the next page of items
+    cursors: Option<Cursors>,         // Cursors for pagination  
+    pub items: Vec<PlayedTrack>,  
 }
 
-#[derive(Debug)]
-pub enum ResponseType {
-    UserStats,
-    RecentlyPlayed,
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Cursors {
+    after: Option<String>,            // Cursor for the next page
+    before: Option<String>,           // Cursor for the previous page
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+pub struct PlayedTrack {
+    played_at: String,            
+    context: Option<TrackContext>,    
+    pub track: Track,              
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct TrackContext {
+    r#type: String,                   // The type of context (e.g., "artist", "playlist")
+    href: Option<String>,             // Link to full details of the context
+    external_urls: Option<ExternalUrls>, // External URLs for the context
+    uri: Option<String>,              // Spotify URI for the context
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct AristsStatsResponse {
+    pub total: u32,
+    pub limit: u32,
+    pub offset: u32,
+    pub href: String,
+    pub next: Option<String>,
+    pub previous: Option<String>,
+    pub items: Vec<Artist>,
+}
 
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct  RecentlyPlayed {
-
-}
-
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct UserStatsResponse {
-    total: u32,      
-    limit: u32,      
-    offset: u32,     
-    href: String,   
-    next: Option<String>, 
-    previous: Option<String>, 
-    items: Vec<Item>,
-}
-
-
-#[derive(Serialize, Deserialize, Debug)]
-#[serde(untagged)]
-pub enum Item {
-    Artist(Artist),
-    Track(Track),
+pub struct TracksStatsResponse {
+    pub total: u32,
+    pub limit: u32,
+    pub offset: u32,
+    pub href: String,
+    pub next: Option<String>,
+    pub previous: Option<String>,
+    pub items: Vec<Track>,
 }
 
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ExternalIds {
-    isrc: String, 
-    ean: String,  
-    upc: String,  
+    isrc: Option<String>,
+    ean: Option<String>,
+    upc: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Album {
-    album_type: String,
-    artists: Vec<Artist>,
-    available_markets: Vec<String>,
-    external_urls: ExternalUrls,
-    href: String,
-    id: String,
-    images: Vec<Image>,
-    is_playable: bool,
-    name: String,
-    release_date: String,
-    release_date_precision: String,
-    total_tracks: u32,
-    r#type: String,
-    uri: String,
+    pub album_type: String,
+    pub artists: Vec<Artist>,
+    pub available_markets: Vec<String>,
+    pub external_urls: ExternalUrls,
+    pub href: String,
+    pub id: String,
+    pub images: Vec<Image>,
+    pub is_playable: Option<bool>,
+    pub name: String,
+    pub release_date: String,
+    pub release_date_precision: String,
+    pub total_tracks: u32,
+    pub r#type: String,
+    pub uri: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Artist {
-    external_urls: ExternalUrls,
-    href: String,
-    id: String,
-    name: String,
-    r#type: String,
-    uri: String,
+    pub external_urls: ExternalUrls,
+    pub href: String,
+    pub id: String,
+    pub name: String,
+    pub r#type: String,
+    pub uri: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ExternalUrls {
-    spotify: String,
+    pub spotify: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Image {
-    height: u32,
-    url: String,
-    width: u32,
+    pub height: u32,
+    pub url: String,
+    pub width: u32,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Track {
-    album: Album,
-    artists: Vec<Artist>,
-    available_markets: Vec<String>,
-    disc_number: u32,
-    duration_ms: u32,
-    explicit: bool,
-    external_ids: ExternalIds,
-    external_urls: ExternalUrls,
-    href: String,
-    id: String,
-    is_local: bool,
-    is_playable: bool,
-    name: String,
-    popularity: u32,
-    preview_url: Option<String>,
-    track_number: u32,
-    r#type: String,
-    uri: String,
+    pub album: Album,
+    pub artists: Vec<Artist>,
+    pub available_markets: Vec<String>,
+    pub disc_number: u32,
+    pub duration_ms: u32,
+    pub explicit: bool,
+    pub external_ids: ExternalIds,
+    pub external_urls: ExternalUrls,
+    pub href: String,
+    pub id: String,
+    pub is_local: bool,
+    pub is_playable: Option<bool>,
+    pub name: String,
+    pub popularity: u32,
+    pub preview_url: Option<String>,
+    pub track_number: u32,
+    pub r#type: String,
+    pub uri: String,
+}
+
+pub enum TimeRange {
+    ShortTerm = 0,
+    MediumTerm  = 1,
+    LongTerm = 2,
 }
 
 
-pub enum TimeRange {
-    ShortTerm,
-    MediumTerm,
-    LongTerm,
+impl TimeRange {
+    /// Converts a numerical value to a TimeRange.
+    ///
+    /// Returns an error if the given value is not a valid TimeRange.
+    pub fn from_number(value: u8) -> Result<Self, String> {
+            match value {
+                0 => Ok(TimeRange::ShortTerm),
+                1 => Ok(TimeRange::MediumTerm),
+                2 => Ok(TimeRange::LongTerm),
+                _ => Err(format!("Invalid value for TimeRange: {}", value)),
+            }
+        }
 }
