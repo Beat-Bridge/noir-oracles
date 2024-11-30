@@ -1,8 +1,9 @@
 use reqwest::header::{HeaderMap, HeaderValue};
 use reqwest::Client;
 use std::error::Error;
+use serde::de::DeserializeOwned;
 
-use crate::types::{RecentlyPlayed, TimeRange, UserStatsResponse, SpotifyApiResponse, ResponseType};
+use crate::types::{AristsStatsResponse, RecentlyPlayed, TimeRange, TracksStatsResponse};
 
 /// Performs a GET request to the Spotify API.
 ///
@@ -16,11 +17,15 @@ use crate::types::{RecentlyPlayed, TimeRange, UserStatsResponse, SpotifyApiRespo
 ///
 /// This function will return an error if the API request fails or if the response
 /// is not in the expected format.
-async fn spotify_api_request(
+
+pub async fn spotify_api_request<T>(
     endpoint: String,
     authorization: String,
-    response_type: ResponseType,
-) -> Result<SpotifyApiResponse, Box<dyn Error>> {
+) -> Result<T, Box<dyn Error>>
+where
+    T: DeserializeOwned,
+{
+    println!("Requesting: {}", endpoint);
     let client = Client::new();
 
     // Build headers
@@ -36,17 +41,10 @@ async fn spotify_api_request(
 
     // Check for HTTP success
     if response.status().is_success() {
-        match response_type {
-            ResponseType::UserStats => {
-                let json_body: UserStatsResponse = response.json().await?;
-                Ok(SpotifyApiResponse::UserStats(json_body))
-            }
-            ResponseType::RecentlyPlayed => {
-                let json_body: RecentlyPlayed = response.json().await?;
-                Ok(SpotifyApiResponse::RecentlyPlayed(json_body))
-            }
-        }
+        // Deserialize the JSON response
+        Ok(response.json::<T>().await?)
     } else {
+        // Handle HTTP errors gracefully
         Err(format!(
             "Request failed with status: {}",
             response.status()
@@ -70,13 +68,16 @@ async fn spotify_api_request(
 ///
 /// This function will return an error if the API request fails or if the response
 /// is not in the expected format.
-pub async fn stats_query_builder(
-    authorization: &str,
+pub async fn stats_query_builder<T>(
+    authorization: String,
     query_type: bool, // true for artists, false for tracks
     range: TimeRange,
-    limit: i8,
-    offset: i8,
-) -> Result<UserStatsResponse, Box<dyn Error>> {
+    limit: u8,
+    offset: u8,
+) -> Result<T, Box<dyn Error>>
+where
+    T: DeserializeOwned,
+{
     // Convert `TimeRange` enum to string
     let time_range = match range {
         TimeRange::ShortTerm => "short_term",
@@ -97,12 +98,12 @@ pub async fn stats_query_builder(
     let auth_header = format!("Bearer {}", authorization);
 
     // Perform the API request
-   match spotify_api_request(endpoint, auth_header, ResponseType::RecentlyPlayed).await {
-        Ok(SpotifyApiResponse::UserStats(stats)) => Ok(stats),
-        Ok(_) => Err("Unexpected response type".into()),
-        Err(e) => Err(e),
-    }
+   let response = spotify_api_request::<T>(endpoint, auth_header).await?;
+
+    Ok(response)
 }
+
+
 
 
 
@@ -119,12 +120,60 @@ pub async fn stats_query_builder(
 ///
 /// This function will return an error if the API request fails or if the response
 /// is not in the expected format.
-pub async fn recently_played_query_builder(authorization: &str,  limit: i8, before: i8, after: i64) -> Result<RecentlyPlayed, Box<dyn Error>> {
-    let endpoint = format!("https://api.spotify.com/v1/me/player/recently-played?limit={}&after={}&before={}",limit,after,before);
+pub async fn recently_played_query_builder(authorization: String, after: u64) -> Result<RecentlyPlayed, Box<dyn Error>> {
+    let endpoint = format!("https://api.spotify.com/v1/me/player/recently-played?after={}",after);
     let auth_header = format!("Bearer {}", authorization);
-    match spotify_api_request(endpoint, auth_header, ResponseType::RecentlyPlayed).await {
-        Ok(SpotifyApiResponse::RecentlyPlayed(plays)) => Ok(plays),
-        Ok(_) => Err("Unexpected response type".into()),
-        Err(e) => Err(e),
+    let response = spotify_api_request::<RecentlyPlayed>(endpoint, auth_header).await?;
+    Ok(response)
+}
+
+
+/// Checks if the user can claim a given track in the top tracks of a given list range.
+///
+/// # Arguments
+///
+/// * `authorization` - The Bearer token for the user's Spotify API session.
+/// * `track_id` - The ID of the track to check.
+/// * `list_range` - The range of the top tracks list to check. (0 = Last 4 weeks, 1 = Last 6 months, 2 = All time)
+///
+/// # Errors
+///
+/// This function will return an error if the API request fails or if the response
+/// is not in the expected format.
+///
+pub async  fn can_claim_top_tracks(authorization: String, track_id: String, time_range:TimeRange, list_range :u8) -> Result<bool, Box<dyn Error>> {
+    let  query = stats_query_builder::<TracksStatsResponse>(authorization, false, time_range, list_range, 0).await?; 
+    for track in query.items {
+        if track.id == track_id {
+           return Ok(true);
+        }
     }
+    Ok(false)
+}
+
+
+
+pub async  fn can_claim_top_artist(authorization: String, artist_id: String, time_range:TimeRange, list_range :u8) -> Result<bool, Box<dyn Error>> {
+    let  query = stats_query_builder::<AristsStatsResponse>(authorization, true, time_range, list_range, 0).await?; 
+    for atist in query.items {
+        if atist.id == artist_id {
+           return Ok(true);
+        }
+    }
+    Ok(false)
+}
+
+pub async  fn can_claim_recently_played_track(authorization: String, track_id: String,  after: u64, played_time: u8) -> Result<bool, Box<dyn Error>> {
+    let  query = recently_played_query_builder(authorization, after).await?;
+    let mut count:u8 = 0; 
+    for recently_played in query.items {
+        if recently_played.track.id == track_id {
+            count += 1;
+        }
+         
+        if count >= played_time {
+            return Ok(true);
+        }
+    }
+    Ok(false)
 }
