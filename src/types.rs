@@ -1,5 +1,9 @@
 use serde::{Deserialize, Serialize};
 
+pub const  CAN_CLAIM_TOP_TRACKS: &str = "can_claim_top_tracks";
+pub const  CAN_CLAIM_TOP_ARTISTS: &str = "can_claim_top_artists";
+pub const  CAN_CLAIM_RECENTLY_PLAYED_TRACK: &str = "can_claim_recently_played_track";
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct RecentlyPlayed {
     href: String,                     // A link to the full result
