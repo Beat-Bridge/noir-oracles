@@ -141,14 +141,14 @@ pub async fn recently_played_query_builder(authorization: String, after: u64) ->
 /// This function will return an error if the API request fails or if the response
 /// is not in the expected format.
 ///
-pub async  fn can_claim_top_tracks(authorization: String, track_id: String, time_range:TimeRange, list_range :u8) -> Result<bool, Box<dyn Error>> {
+pub async  fn can_claim_top_tracks(authorization: String, track_id: String, time_range:TimeRange, list_range :u8) -> Result<String, Box<dyn Error>> {
     let  query = stats_query_builder::<TracksStatsResponse>(authorization, false, time_range, list_range, 0).await?; 
     for track in query.items {
         if track.id == track_id {
-           return Ok(true);
+           return Ok(String::from("1"));
         }
     }
-    Ok(false)
+     return Ok(String::from("0"));
 }
 
 
