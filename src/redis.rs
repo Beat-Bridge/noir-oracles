@@ -1,5 +1,5 @@
-use redis::{Commands, RedisResult};
-use std::{env, fmt::Result};
+use redis::RedisResult;
+use std::env;
 
 fn connect() -> redis::Connection {
     //format - host:port
@@ -14,17 +14,18 @@ fn connect() -> redis::Connection {
     };
 
     let redis_conn_url = format!("{}://:{}@{}", uri_scheme, redis_password, redis_host_name);
-    //println!("{}", redis_conn_url);
+    println!("{}", redis_conn_url);
 
-    redis::Client::open(&*redis_conn_url)
+
+    redis::Client::open("redis://127.0.0.1/")
         .expect("Invalid connection URL")
         .get_connection()
         .expect("failed to connect to Redis")
 }
 
 pub fn  store_key_and_token(key:String, token: String) -> RedisResult<bool> {
+    println!("{} {}", key, token);
     let mut conn = connect();
-    println!("******* Running SET, GET, INCR commands *******");
 
     let _: () = redis::cmd("SET")
         .arg(&key)
@@ -38,4 +39,24 @@ pub fn  store_key_and_token(key:String, token: String) -> RedisResult<bool> {
         return Ok(false);
     }
     Ok(true)
+}
+
+
+pub fn  get_token(key:String) -> RedisResult<String> {
+    println!("{}", key);
+    let mut conn = connect();
+
+    let found_token: String = redis::cmd("GET")
+        .arg(key)
+        .query(&mut conn)?;
+    Ok(found_token)
+}
+
+pub fn  delete_token(key:String) -> RedisResult<String> {
+    let mut conn = connect();
+
+    let found_key: String = redis::cmd("DEL")
+        .arg(key)
+        .query(&mut conn)?;
+    Ok(found_key)
 }
