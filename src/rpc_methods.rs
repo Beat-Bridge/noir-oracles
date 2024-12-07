@@ -1,5 +1,3 @@
-use std::vec;
-
 use jsonrpc_core::{Error, IoHandler, Params};
 use serde_json::{json}; 
 use crate::{redis::{store_key_and_token, get_token, delete_token}, types::{TimeRange, CAN_CLAIM_RECENTLY_PLAYED_TRACK, CAN_CLAIM_TOP_ARTISTS, CAN_CLAIM_TOP_TRACKS,  }};
@@ -7,7 +5,10 @@ use jsonrpc_core::types::Value;
 
 use crate::query_builder::{can_claim_top_tracks, can_claim_top_artist, can_claim_recently_played_track};
 
-async fn handle_can_claim_top_tracks(params: &serde_json::Value) -> Result<Value, Error> {
+
+async fn validate_and_extract_inputs(
+    params: &serde_json::Value,
+) -> Result<(&Vec<Value>, &Vec<Value>, &Vec<Value>, &Vec<Value>), Error> {
     let inputs = params
         .get("inputs")
         .and_then(|v| v.as_array())
@@ -15,7 +16,7 @@ async fn handle_can_claim_top_tracks(params: &serde_json::Value) -> Result<Value
 
     if inputs.len() != 4 {
         return Err(Error::invalid_params(
-            "Invalid input; requires 4 distinct inputs for 'can_claim_top_tracks'",
+            "Invalid input; requires 4 distinct inputs",
         ));
     }
 
@@ -32,6 +33,12 @@ async fn handle_can_claim_top_tracks(params: &serde_json::Value) -> Result<Value
         .as_array()
         .ok_or_else(|| Error::invalid_params("Fourth input must be an array"))?;
 
+    Ok((key, track, time_range, list_range))
+}
+
+
+async fn handle_can_claim_top_tracks(params: &serde_json::Value) -> Result<Value, Error> {
+    let (key, track, time_range, list_range) = validate_and_extract_inputs(params).await?;
     let key_data: String = key.iter().map(hex_to_char).collect();
     let track_data: String = track.iter().map(hex_to_char).collect();
     let time_range_data: Vec<u8> = time_range.iter().map(hex_to_u8).collect();
@@ -53,9 +60,58 @@ async fn handle_can_claim_top_tracks(params: &serde_json::Value) -> Result<Value
 }
 
 
+async fn handle_can_claim_top_artist(params: &serde_json::Value) -> Result<Value, Error> {
+    let (key, track, time_range, list_range) = validate_and_extract_inputs(params).await?;
+    let key_data: String = key.iter().map(hex_to_char).collect();
+    let track_data: String = track.iter().map(hex_to_char).collect();
+    let time_range_data: Vec<u8> = time_range.iter().map(hex_to_u8).collect();
+    let list_range_data: Vec<u8> = list_range.iter().map(hex_to_u8).collect();
+
+    if time_range_data.is_empty() || list_range_data.is_empty() {
+        return Err(Error::invalid_params("Time range or list range is empty"));
+    }
+
+    let time_range_type = TimeRange::from_number(time_range_data[0])
+        .map_err(|e| Error::invalid_params_with_details(e.to_string(), ""))?;
+
+    let  auth_data  = get_token(key_data.clone())
+        .map_err(|e| Error::invalid_params_with_details(e.to_string(), ""))?;
+    println!(" found auth {}", auth_data);
+    can_claim_top_artist(auth_data, track_data, time_range_type, list_range_data[0])
+        .await.map(|result| json!({"values": [result]}))
+        .map_err(|e| Error::invalid_params_with_details(e.to_string(), ""))
+}
+
+
+
+async fn handle_can_claim_recently_played_track(params: &serde_json::Value) -> Result<Value, Error> {
+    let (key, track, time_range, list_range) = validate_and_extract_inputs(params).await?;
+    let key_data: String = key.iter().map(hex_to_char).collect();
+    let track_data: String = track.iter().map(hex_to_char).collect();
+    let after_data: Vec<u64> = time_range.iter().map(hex_to_u64).collect();
+    let played_time_data: Vec<u8> = list_range.iter().map(hex_to_u8).collect();
+
+    if after_data.is_empty() || played_time_data.is_empty() {
+        return Err(Error::invalid_params("Time range or list range is empty"));
+    }
+
+    let  auth_data  = get_token(key_data.clone())
+        .map_err(|e| Error::invalid_params_with_details(e.to_string(), ""))?;
+    println!(" found auth {}", auth_data);
+    can_claim_recently_played_track(auth_data, track_data, after_data[0], played_time_data[0])
+        .await.map(|result| json!({"values": [result]}))
+        .map_err(|e| Error::invalid_params_with_details(e.to_string(), ""))
+}
+  
+
 fn hex_to_u8(hex_string: &Value) -> u8 {
     let hex_str = hex_string.as_str().unwrap_or("\0");
     u8::from_str_radix(&hex_str[2..], 16).unwrap_or(0)
+}
+
+fn hex_to_u64(hex_string: &Value) -> u64 {
+    let hex_str = hex_string.as_str().unwrap_or("\0");
+    u64::from_str_radix(&hex_str[2..], 16).unwrap_or(0)
 }
 
 fn hex_to_char(hex_string: &Value) -> char {
@@ -100,10 +156,10 @@ pub fn create_io() -> IoHandler {
                         return handle_can_claim_top_tracks(params).await;
                     }
                     else if function == CAN_CLAIM_TOP_ARTISTS {
-                        return Err(Error::invalid_params("Not implemented yet"));
+                        return handle_can_claim_top_artist(params).await;
                     }
                     else if function == CAN_CLAIM_RECENTLY_PLAYED_TRACK {
-                        return Err(Error::invalid_params("Not implemented yet"));
+                        return  handle_can_claim_recently_played_track(params).await;
                     }
                     else {
                         return Err(Error::invalid_params("Invalid method"));
@@ -130,15 +186,19 @@ pub fn create_io() -> IoHandler {
         Ok(Value::String(id))
     });
 
-    // io.add_method("can_claim_recently_played_track", |params: Params| async {
-    //     let (authorization, track_id, after, played_time) = 
-    //         params.parse::<(String, String,u64, u8)>()
-    //         .map_err(|e| Error::invalid_params(e.message))?;
+     io.add_method("delete_key", |params: Params| async move {
+        // Parse the parameters into a tuple of two strings
+        let id: String = 
+            params.parse::<String>()
+            .map_err(|e| Error::invalid_params(e.message))?;
+        if id.is_empty() {
+            return Err(Error::invalid_params("ID or token cannot be empty"));
+        }
+        delete_token(id.clone()).
+            map_err(|e| Error::invalid_params(e.to_string()))?;
 
-    //     can_claim_recently_played_track(authorization,track_id,after,played_time).await
-    //         .map(|result| Value::Bool(result))
-    //         .map_err(|e| Error::invalid_params_with_details(e.to_string(), ""))
-    // });
+        Ok(Value::String(id))
+    });
 
     io
 }
