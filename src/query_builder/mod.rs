@@ -153,17 +153,17 @@ pub async  fn can_claim_top_tracks(authorization: String, track_id: String, time
 
 
 
-pub async  fn can_claim_top_artist(authorization: String, artist_id: String, time_range:TimeRange, list_range :u8) -> Result<bool, Box<dyn Error>> {
+pub async  fn can_claim_top_artist(authorization: String, artist_id: String, time_range:TimeRange, list_range :u8) -> Result<String, Box<dyn Error>> {
     let  query = stats_query_builder::<AristsStatsResponse>(authorization, true, time_range, list_range, 0).await?; 
     for atist in query.items {
         if atist.id == artist_id {
-           return Ok(true);
+           return Ok(String::from("1"));
         }
     }
-    Ok(false)
+    Ok(String::from("0"))
 }
 
-pub async  fn can_claim_recently_played_track(authorization: String, track_id: String,  after: u64, played_time: u8) -> Result<bool, Box<dyn Error>> {
+pub async  fn can_claim_recently_played_track(authorization: String, track_id: String,  after: u64, played_times: u8) -> Result<String, Box<dyn Error>> {
     let  query = recently_played_query_builder(authorization, after).await?;
     let mut count:u8 = 0; 
     for recently_played in query.items {
@@ -171,9 +171,9 @@ pub async  fn can_claim_recently_played_track(authorization: String, track_id: S
             count += 1;
         }
          
-        if count >= played_time {
-            return Ok(true);
+        if count >= played_times {
+            return Ok(String::from("1"));
         }
     }
-    Ok(false)
+    Ok(String::from("0"))
 }
