@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
-pub const  CAN_CLAIM_TOP_TRACKS: &str = "can_claim_top_tracks";
-pub const  CAN_CLAIM_TOP_ARTISTS: &str = "can_claim_top_artists";
+pub const  CAN_CLAIM_TOP_TRACKS: &str = "can_claim_top_track";
+pub const  CAN_CLAIM_TOP_ARTISTS: &str = "can_claim_top_artist";
 pub const  CAN_CLAIM_RECENTLY_PLAYED_TRACK: &str = "can_claim_recently_played_track";
 
 #[derive(Serialize, Deserialize, Debug)]

@@ -14,17 +14,15 @@ fn connect() -> redis::Connection {
     };
 
     let redis_conn_url = format!("{}://:{}@{}", uri_scheme, redis_password, redis_host_name);
-    println!("{}", redis_conn_url);
 
 
-    redis::Client::open("redis://127.0.0.1/")
+    redis::Client::open("redis://127.0.0.1:6379")
         .expect("Invalid connection URL")
         .get_connection()
         .expect("failed to connect to Redis")
 }
 
 pub fn  store_key_and_token(key:String, token: String) -> RedisResult<bool> {
-    println!("{} {}", key, token);
     let mut conn = connect();
 
     let _: () = redis::cmd("SET")
@@ -43,7 +41,6 @@ pub fn  store_key_and_token(key:String, token: String) -> RedisResult<bool> {
 
 
 pub fn  get_token(key:String) -> RedisResult<String> {
-    println!("{}", key);
     let mut conn = connect();
 
     let found_token: String = redis::cmd("GET")
