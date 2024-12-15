@@ -25,13 +25,13 @@ pub async fn spotify_api_request<T>(
 where
     T: DeserializeOwned,
 {
-    println!("Requesting: {}", endpoint);
     let client = Client::new();
 
     // Build headers
     let mut headers = HeaderMap::new();
     headers.insert("Authorization", HeaderValue::from_str(&authorization)?);
 
+    println!("Endpoint: {}, headers: {:#?}", endpoint, headers);
     // Make the GET request
     let response = client
         .get(endpoint)
@@ -95,7 +95,7 @@ where
     );
 
     // Add Bearer token to the authorization header
-    let auth_header = format!("Bearer {}", authorization);
+    let auth_header = format!("{}", authorization);
 
     // Perform the API request
    let response = spotify_api_request::<T>(endpoint, auth_header).await?;
@@ -122,7 +122,7 @@ where
 /// is not in the expected format.
 pub async fn recently_played_query_builder(authorization: String, after: u64) -> Result<RecentlyPlayed, Box<dyn Error>> {
     let endpoint = format!("https://api.spotify.com/v1/me/player/recently-played?after={}",after);
-    let auth_header = format!("Bearer {}", authorization);
+    let auth_header = format!("{}", authorization);
     let response = spotify_api_request::<RecentlyPlayed>(endpoint, auth_header).await?;
     Ok(response)
 }

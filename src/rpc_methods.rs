@@ -53,7 +53,7 @@ async fn handle_can_claim_top_tracks(params: &serde_json::Value) -> Result<Value
 
     let  auth_data  = get_token(key_data.clone())
         .map_err(|e| Error::invalid_params_with_details(e.to_string(), ""))?;
-    println!(" found auth {}", auth_data);
+    //println!("auth_data:{}", auth_data);
     can_claim_top_tracks(auth_data, track_data, time_range_type, list_range_data[0])
         .await.map(|result| json!({"values": [result]}))
         .map_err(|e| Error::invalid_params_with_details(e.to_string(), ""))
@@ -76,7 +76,7 @@ async fn handle_can_claim_top_artist(params: &serde_json::Value) -> Result<Value
 
     let  auth_data  = get_token(key_data.clone())
         .map_err(|e| Error::invalid_params_with_details(e.to_string(), ""))?;
-    println!(" found auth {}", auth_data);
+    //println!("auth_data:{}", auth_data);
     can_claim_top_artist(auth_data, track_data, time_range_type, list_range_data[0])
         .await.map(|result| json!({"values": [result]}))
         .map_err(|e| Error::invalid_params_with_details(e.to_string(), ""))
@@ -85,11 +85,11 @@ async fn handle_can_claim_top_artist(params: &serde_json::Value) -> Result<Value
 
 
 async fn handle_can_claim_recently_played_track(params: &serde_json::Value) -> Result<Value, Error> {
-    let (key, track, time_range, list_range) = validate_and_extract_inputs(params).await?;
+    let (key, track, after_range, play_time_range) = validate_and_extract_inputs(params).await?;
     let key_data: String = key.iter().map(hex_to_char).collect();
     let track_data: String = track.iter().map(hex_to_char).collect();
-    let after_data: Vec<u64> = time_range.iter().map(hex_to_u64).collect();
-    let played_time_data: Vec<u8> = list_range.iter().map(hex_to_u8).collect();
+    let after_data: Vec<u64> = after_range.iter().map(hex_to_u64).collect();
+    let played_time_data: Vec<u8> = play_time_range.iter().map(hex_to_u8).collect();
 
     if after_data.is_empty() || played_time_data.is_empty() {
         return Err(Error::invalid_params("Time range or list range is empty"));
@@ -97,7 +97,7 @@ async fn handle_can_claim_recently_played_track(params: &serde_json::Value) -> R
 
     let  auth_data  = get_token(key_data.clone())
         .map_err(|e| Error::invalid_params_with_details(e.to_string(), ""))?;
-    println!(" found auth {}", auth_data);
+    //println!("auth_data: {}", auth_data);
     can_claim_recently_played_track(auth_data, track_data, after_data[0], played_time_data[0])
         .await.map(|result| json!({"values": [result]}))
         .map_err(|e| Error::invalid_params_with_details(e.to_string(), ""))
