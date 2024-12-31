@@ -1,14 +1,13 @@
+use dotenv::dotenv;
 use rpc_methods::create_io;
 use server::create_server;
-use dotenv::dotenv;
 
-pub mod  query_builder;
-pub mod types;
-pub mod server;
-pub mod rpc_methods;
 pub mod middleware;
-pub mod  redis;
-
+pub mod query_builder;
+pub mod redis;
+pub mod rpc_methods;
+pub mod server;
+pub mod types;
 
 #[tokio::main]
 async fn main() {

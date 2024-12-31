@@ -1,10 +1,16 @@
+use crate::{
+    redis::{delete_token, get_token, store_key_and_token},
+    types::{
+        TimeRange, CAN_CLAIM_RECENTLY_PLAYED_TRACK, CAN_CLAIM_TOP_ARTISTS, CAN_CLAIM_TOP_TRACKS,
+    },
+};
+use jsonrpc_core::types::Value;
 use jsonrpc_core::{Error, IoHandler, Params};
-use serde_json::{json}; 
-use crate::{redis::{store_key_and_token, get_token, delete_token}, types::{TimeRange, CAN_CLAIM_RECENTLY_PLAYED_TRACK, CAN_CLAIM_TOP_ARTISTS, CAN_CLAIM_TOP_TRACKS,  }};
-use jsonrpc_core::types::Value; 
+use serde_json::json;
 
-use crate::query_builder::{can_claim_top_tracks, can_claim_top_artist, can_claim_recently_played_track};
-
+use crate::query_builder::{
+    can_claim_recently_played_track, can_claim_top_artist, can_claim_top_tracks,
+};
 
 async fn validate_and_extract_inputs(
     params: &serde_json::Value,
@@ -36,7 +42,6 @@ async fn validate_and_extract_inputs(
     Ok((key, track, time_range, list_range))
 }
 
-
 async fn handle_can_claim_top_tracks(params: &serde_json::Value) -> Result<Value, Error> {
     let (key, track, time_range, list_range) = validate_and_extract_inputs(params).await?;
     let key_data: String = key.iter().map(hex_to_char).collect();
@@ -51,14 +56,14 @@ async fn handle_can_claim_top_tracks(params: &serde_json::Value) -> Result<Value
     let time_range_type = TimeRange::from_number(time_range_data[0])
         .map_err(|e| Error::invalid_params_with_details(e.to_string(), ""))?;
 
-    let  auth_data  = get_token(key_data.clone())
+    let auth_data = get_token(key_data.clone())
         .map_err(|e| Error::invalid_params_with_details(e.to_string(), ""))?;
     //println!("auth_data:{}", auth_data);
     can_claim_top_tracks(auth_data, track_data, time_range_type, list_range_data[0])
-        .await.map(|result| json!({"values": [result]}))
+        .await
+        .map(|result| json!({"values": [result]}))
         .map_err(|e| Error::invalid_params_with_details(e.to_string(), ""))
 }
-
 
 async fn handle_can_claim_top_artist(params: &serde_json::Value) -> Result<Value, Error> {
     let (key, track, time_range, list_range) = validate_and_extract_inputs(params).await?;
@@ -74,17 +79,18 @@ async fn handle_can_claim_top_artist(params: &serde_json::Value) -> Result<Value
     let time_range_type = TimeRange::from_number(time_range_data[0])
         .map_err(|e| Error::invalid_params_with_details(e.to_string(), ""))?;
 
-    let  auth_data  = get_token(key_data.clone())
+    let auth_data = get_token(key_data.clone())
         .map_err(|e| Error::invalid_params_with_details(e.to_string(), ""))?;
     //println!("auth_data:{}", auth_data);
     can_claim_top_artist(auth_data, track_data, time_range_type, list_range_data[0])
-        .await.map(|result| json!({"values": [result]}))
+        .await
+        .map(|result| json!({"values": [result]}))
         .map_err(|e| Error::invalid_params_with_details(e.to_string(), ""))
 }
 
-
-
-async fn handle_can_claim_recently_played_track(params: &serde_json::Value) -> Result<Value, Error> {
+async fn handle_can_claim_recently_played_track(
+    params: &serde_json::Value,
+) -> Result<Value, Error> {
     let (key, track, after_range, play_time_range) = validate_and_extract_inputs(params).await?;
     let key_data: String = key.iter().map(hex_to_char).collect();
     let track_data: String = track.iter().map(hex_to_char).collect();
@@ -95,14 +101,14 @@ async fn handle_can_claim_recently_played_track(params: &serde_json::Value) -> R
         return Err(Error::invalid_params("Time range or list range is empty"));
     }
 
-    let  auth_data  = get_token(key_data.clone())
+    let auth_data = get_token(key_data.clone())
         .map_err(|e| Error::invalid_params_with_details(e.to_string(), ""))?;
     //println!("auth_data: {}", auth_data);
     can_claim_recently_played_track(auth_data, track_data, after_data[0], played_time_data[0])
-        .await.map(|result| json!({"values": [result]}))
+        .await
+        .map(|result| json!({"values": [result]}))
         .map_err(|e| Error::invalid_params_with_details(e.to_string(), ""))
 }
-  
 
 fn hex_to_u8(hex_string: &Value) -> u8 {
     let hex_str = hex_string.as_str().unwrap_or("\0");
@@ -124,20 +130,17 @@ fn hex_to_char(hex_string: &Value) -> char {
         return '\0';
     }
 
-
     let trimmed = &hex_str[2..];
     let number = match u32::from_str_radix(trimmed, 16) {
         Ok(n) => n,
-        Err(_) => return '\0', 
+        Err(_) => return '\0',
     };
 
     match char::from_u32(number) {
         Some(c) => c,
-        None => '\0', 
+        None => '\0',
     }
 }
-
-
 
 pub fn create_io() -> IoHandler {
     let mut io = IoHandler::default();
@@ -154,48 +157,46 @@ pub fn create_io() -> IoHandler {
                 if let Some(function) = function {
                     if function == CAN_CLAIM_TOP_TRACKS {
                         return handle_can_claim_top_tracks(params).await;
-                    }
-                    else if function == CAN_CLAIM_TOP_ARTISTS {
+                    } else if function == CAN_CLAIM_TOP_ARTISTS {
                         return handle_can_claim_top_artist(params).await;
-                    }
-                    else if function == CAN_CLAIM_RECENTLY_PLAYED_TRACK {
-                        return  handle_can_claim_recently_played_track(params).await;
-                    }
-                    else {
+                    } else if function == CAN_CLAIM_RECENTLY_PLAYED_TRACK {
+                        return handle_can_claim_recently_played_track(params).await;
+                    } else {
                         return Err(Error::invalid_params("Invalid method"));
                     }
                 } else {
                     return Err(Error::invalid_params("Missing 'function' field"));
                 }
             }
-            _ => Err(Error::invalid_params("Invalid params; expected a single-item array")),
+            _ => Err(Error::invalid_params(
+                "Invalid params; expected a single-item array",
+            )),
         }
     });
 
     io.add_method("store_key", |params: Params| async move {
         // Parse the parameters into a tuple of two strings
-        let (id, token): (String, String) = 
-            params.parse::<(String, String)>()
+        let (id, token): (String, String) = params
+            .parse::<(String, String)>()
             .map_err(|e| Error::invalid_params(e.message))?;
         if id.is_empty() || token.is_empty() {
             return Err(Error::invalid_params("ID or token cannot be empty"));
         }
-        store_key_and_token(id.clone(), token.clone()).
-            map_err(|e| Error::invalid_params(e.to_string()))?;
+        store_key_and_token(id.clone(), token.clone())
+            .map_err(|e| Error::invalid_params(e.to_string()))?;
 
         Ok(Value::String(id))
     });
 
-     io.add_method("delete_key", |params: Params| async move {
+    io.add_method("delete_key", |params: Params| async move {
         // Parse the parameters into a tuple of two strings
-        let id: String = 
-            params.parse::<String>()
+        let id: String = params
+            .parse::<String>()
             .map_err(|e| Error::invalid_params(e.message))?;
         if id.is_empty() {
             return Err(Error::invalid_params("ID or token cannot be empty"));
         }
-        delete_token(id.clone()).
-            map_err(|e| Error::invalid_params(e.to_string()))?;
+        delete_token(id.clone()).map_err(|e| Error::invalid_params(e.to_string()))?;
 
         Ok(Value::String(id))
     });

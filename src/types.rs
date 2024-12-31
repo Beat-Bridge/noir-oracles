@@ -1,37 +1,37 @@
 use serde::{Deserialize, Serialize};
 
-pub const  CAN_CLAIM_TOP_TRACKS: &str = "can_claim_top_track";
-pub const  CAN_CLAIM_TOP_ARTISTS: &str = "can_claim_top_artist";
-pub const  CAN_CLAIM_RECENTLY_PLAYED_TRACK: &str = "can_claim_recently_played_track";
+pub const CAN_CLAIM_TOP_TRACKS: &str = "can_claim_top_track";
+pub const CAN_CLAIM_TOP_ARTISTS: &str = "can_claim_top_artist";
+pub const CAN_CLAIM_RECENTLY_PLAYED_TRACK: &str = "can_claim_recently_played_track";
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct RecentlyPlayed {
-    href: String,                     // A link to the full result
-    limit: u32,                       // Maximum number of items in the response
-    next: Option<String>,             // URL to the next page of items
-    cursors: Option<Cursors>,         // Cursors for pagination  
-    pub items: Vec<PlayedTrack>,  
+    href: String,             // A link to the full result
+    limit: u32,               // Maximum number of items in the response
+    next: Option<String>,     // URL to the next page of items
+    cursors: Option<Cursors>, // Cursors for pagination
+    pub items: Vec<PlayedTrack>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Cursors {
-    after: Option<String>,            // Cursor for the next page
-    before: Option<String>,           // Cursor for the previous page
+    after: Option<String>,  // Cursor for the next page
+    before: Option<String>, // Cursor for the previous page
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct PlayedTrack {
-    played_at: String,            
-    context: Option<TrackContext>,    
-    pub track: Track,              
+    played_at: String,
+    context: Option<TrackContext>,
+    pub track: Track,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct TrackContext {
-    r#type: String,                   // The type of context (e.g., "artist", "playlist")
-    href: Option<String>,             // Link to full details of the context
+    r#type: String,       // The type of context (e.g., "artist", "playlist")
+    href: Option<String>, // Link to full details of the context
     external_urls: Option<ExternalUrls>, // External URLs for the context
-    uri: Option<String>,              // Spotify URI for the context
+    uri: Option<String>,  // Spotify URI for the context
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -45,7 +45,6 @@ pub struct AristsStatsResponse {
     pub items: Vec<Artist>,
 }
 
-
 #[derive(Serialize, Deserialize, Debug)]
 pub struct TracksStatsResponse {
     pub total: u32,
@@ -56,7 +55,6 @@ pub struct TracksStatsResponse {
     pub previous: Option<String>,
     pub items: Vec<Track>,
 }
-
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ExternalIds {
@@ -129,21 +127,20 @@ pub struct Track {
 
 pub enum TimeRange {
     ShortTerm = 0,
-    MediumTerm  = 1,
+    MediumTerm = 1,
     LongTerm = 2,
 }
-
 
 impl TimeRange {
     /// Converts a numerical value to a TimeRange.
     ///
     /// Returns an error if the given value is not a valid TimeRange.
     pub fn from_number(value: u8) -> Result<Self, String> {
-            match value {
-                0 => Ok(TimeRange::ShortTerm),
-                1 => Ok(TimeRange::MediumTerm),
-                2 => Ok(TimeRange::LongTerm),
-                _ => Err(format!("Invalid value for TimeRange: {}", value)),
-            }
+        match value {
+            0 => Ok(TimeRange::ShortTerm),
+            1 => Ok(TimeRange::MediumTerm),
+            2 => Ok(TimeRange::LongTerm),
+            _ => Err(format!("Invalid value for TimeRange: {}", value)),
         }
+    }
 }

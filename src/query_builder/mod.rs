@@ -1,7 +1,7 @@
 use reqwest::header::{HeaderMap, HeaderValue};
 use reqwest::Client;
-use std::error::Error;
 use serde::de::DeserializeOwned;
+use std::error::Error;
 
 use crate::types::{AristsStatsResponse, RecentlyPlayed, TimeRange, TracksStatsResponse};
 
@@ -33,11 +33,7 @@ where
 
     println!("Endpoint: {}, headers: {:#?}", endpoint, headers);
     // Make the GET request
-    let response = client
-        .get(endpoint)
-        .headers(headers)
-        .send()
-        .await?;
+    let response = client.get(endpoint).headers(headers).send().await?;
 
     // Check for HTTP success
     if response.status().is_success() {
@@ -45,14 +41,9 @@ where
         Ok(response.json::<T>().await?)
     } else {
         // Handle HTTP errors gracefully
-        Err(format!(
-            "Request failed with status: {}",
-            response.status()
-        )
-        .into())
+        Err(format!("Request failed with status: {}", response.status()).into())
     }
 }
-
 
 /// Builds a query to the Spotify API to fetch a user's top artists or tracks.
 ///
@@ -98,14 +89,10 @@ where
     let auth_header = format!("{}", authorization);
 
     // Perform the API request
-   let response = spotify_api_request::<T>(endpoint, auth_header).await?;
+    let response = spotify_api_request::<T>(endpoint, auth_header).await?;
 
     Ok(response)
 }
-
-
-
-
 
 /// Builds a query to the Spotify API to fetch a user's recently played tracks.
 ///
@@ -120,13 +107,18 @@ where
 ///
 /// This function will return an error if the API request fails or if the response
 /// is not in the expected format.
-pub async fn recently_played_query_builder(authorization: String, after: u64) -> Result<RecentlyPlayed, Box<dyn Error>> {
-    let endpoint = format!("https://api.spotify.com/v1/me/player/recently-played?after={}",after);
+pub async fn recently_played_query_builder(
+    authorization: String,
+    after: u64,
+) -> Result<RecentlyPlayed, Box<dyn Error>> {
+    let endpoint = format!(
+        "https://api.spotify.com/v1/me/player/recently-played?after={}",
+        after
+    );
     let auth_header = format!("{}", authorization);
     let response = spotify_api_request::<RecentlyPlayed>(endpoint, auth_header).await?;
     Ok(response)
 }
-
 
 /// Checks if the user can claim a given track in the top tracks of a given list range.
 ///
@@ -141,36 +133,53 @@ pub async fn recently_played_query_builder(authorization: String, after: u64) ->
 /// This function will return an error if the API request fails or if the response
 /// is not in the expected format.
 ///
-pub async  fn can_claim_top_tracks(authorization: String, track_id: String, time_range:TimeRange, list_range :u8) -> Result<String, Box<dyn Error>> {
-    let  query = stats_query_builder::<TracksStatsResponse>(authorization, false, time_range, list_range, 0).await?; 
+pub async fn can_claim_top_tracks(
+    authorization: String,
+    track_id: String,
+    time_range: TimeRange,
+    list_range: u8,
+) -> Result<String, Box<dyn Error>> {
+    let query =
+        stats_query_builder::<TracksStatsResponse>(authorization, false, time_range, list_range, 0)
+            .await?;
     for track in query.items {
         if track.id == track_id {
-           return Ok(String::from("1"));
+            return Ok(String::from("1"));
         }
     }
-     return Ok(String::from("0"));
+    return Ok(String::from("0"));
 }
 
-
-
-pub async  fn can_claim_top_artist(authorization: String, artist_id: String, time_range:TimeRange, list_range :u8) -> Result<String, Box<dyn Error>> {
-    let  query = stats_query_builder::<AristsStatsResponse>(authorization, true, time_range, list_range, 0).await?; 
+pub async fn can_claim_top_artist(
+    authorization: String,
+    artist_id: String,
+    time_range: TimeRange,
+    list_range: u8,
+) -> Result<String, Box<dyn Error>> {
+    let query =
+        stats_query_builder::<AristsStatsResponse>(authorization, true, time_range, list_range, 0)
+            .await?;
     for atist in query.items {
         if atist.id == artist_id {
-           return Ok(String::from("1"));
+            return Ok(String::from("1"));
         }
     }
     Ok(String::from("0"))
 }
 
-pub async  fn can_claim_recently_played_track(authorization: String, track_id: String,  after: u64, played_times: u8) -> Result<String, Box<dyn Error>> {
-    let  query = recently_played_query_builder(authorization, after).await?;
-    let mut count:u8 = 0; 
+pub async fn can_claim_recently_played_track(
+    authorization: String,
+    track_id: String,
+    after: u64,
+    played_times: u8,
+) -> Result<String, Box<dyn Error>> {
+    let query = recently_played_query_builder(authorization, after).await?;
+    let mut count: u8 = 0;
     for recently_played in query.items {
         if recently_played.track.id == track_id {
             count += 1;
         }
-         
+
         if count >= played_times {
             return Ok(String::from("1"));
         }
